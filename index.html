@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DriveSched — Autoescuela sin esperas en mostrador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{--accent:#2563eb;--accent2:#1d4ed8}
+*{font-family:'Inter',sans-serif}
+body{background:#0a0a0a;color:#f0f0f0}
+.glass{background:rgba(255,255,255,.04);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+.accent{color:var(--accent)}
+.accent-bg{background:var(--accent)}
+.btn-primary{background:var(--accent);color:#000;font-weight:700;transition:all .2s;border-radius:12px;padding:14px 28px;display:inline-block;border:none;cursor:pointer}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 10px 30px -8px rgba(37,99,235,.6)}
+.btn-secondary{border:1px solid #2a2a2a;color:#f0f0f0;font-weight:600;border-radius:12px;padding:14px 28px;transition:all .2s;display:inline-block;background:transparent;cursor:pointer}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.card{background:#111;border:1px solid #1f1f1f;border-radius:20px;transition:all .3s}
+.card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 20px 40px -20px rgba(37,99,235,.4)}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.timeslot{border:1px solid #2a2a2a;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;background:#111;text-align:center}
+.timeslot:hover,.timeslot.sel{background:var(--accent);color:#000;border-color:var(--accent)}
+.timeslot.full{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+.progress-bar{height:8px;background:#1f1f1f;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#60a5fa);border-radius:4px;transition:width .8s ease;width:0%}
+.toggle-car{border:1px solid #2a2a2a;border-radius:12px;padding:14px 24px;cursor:pointer;font-weight:600;transition:all .2s;background:#111}
+.toggle-car.sel{background:var(--accent);color:#000;border-color:var(--accent)}
+@keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.pulse{animation:pulse-dot 2s infinite}
+.fade-up{opacity:0;transform:translateY(16px);transition:all .6s ease}
+.fade-up.show{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:#0a0a0a}
+::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:4px}
+</style>
+</head>
+<body class="antialiased">
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl accent-bg flex items-center justify-center text-black font-extrabold text-lg">DS</div>
+      <span class="font-extrabold text-lg tracking-tight">DriveSched <span class="accent">🚗</span></span>
+    </div>
+    <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+      <a href="#reserva" class="hover:text-white transition">Reserva tu clase</a>
+      <a href="#progreso" class="hover:text-white transition">Tu progreso</a>
+      <a href="#servicios" class="hover:text-white transition">Servicios</a>
+      <a href="#opiniones" class="hover:text-white transition">Opiniones</a>
+    </div>
+    <a href="#reserva" class="btn-primary text-sm">Reservar ahora</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="pt-40 pb-24 px-6 max-w-7xl mx-auto">
+  <div class="max-w-3xl">
+    <span class="inline-block glass rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide text-blue-300 mb-6">🚦 AUTOESCUELA DIGITAL · CÓRDOBA</span>
+    <h1 class="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight mb-6">
+      Aprende a conducir sin <span class="accent">colas</span> ni <span class="accent">llamadas</span> a la oficina
+    </h1>
+    <p class="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl">
+      Reserva tus clases prácticas, elige instructor y tipo de coche, y sigue tu progreso hacia el examen, todo desde el móvil. DriveSched pone tu autoescuela en tu bolsillo.
+    </p>
+    <div class="flex flex-wrap gap-4 mb-14">
+      <a href="#reserva" class="btn-primary">Reserva tu clase práctica →</a>
+      <a href="#progreso" class="btn-secondary">Ver mi progreso</a>
+    </div>
+    <div class="flex flex-wrap gap-8 text-sm text-gray-400">
+      <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-green-500 pulse"></span> 38 plazas libres esta semana</div>
+      <div class="flex items-center gap-2"><span class="accent font-bold">+1.200</span> alumnos aprobados</div>
+      <div class="flex items-center gap-2"><span class="accent font-bold">4,9★</span> valoración media</div>
+    </div>
+  </div>
+</header>
+
+<!-- FEATURE ESTRELLA: RESERVA -->
+<section id="reserva" class="px-6 max-w-7xl mx-auto py-16">
+  <div class="mb-12 max-w-2xl">
+    <span class="text-xs font-bold tracking-widest text-blue-400 uppercase">Función estrella</span>
+    <h2 class="text-3xl md:text-5xl font-extrabold mt-2 mb-4">Reserva tu clase práctica</h2>
+    <p class="text-gray-400 text-lg">Elige instructor, tipo de coche y la franja que mejor te venga. En 30 segundos tienes tu clase confirmada.</p>
+  </div>
+
+  <!-- Paso 1: instructor -->
+  <div class="mb-10">
+    <h3 class="font-semibold text-lg mb-4 flex items-center gap-2"><span class="accent-bg text-black w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">1</span> Elige tu instructor</h3>
+    <div class="grid md:grid-cols-3 gap-5" id="instructores">
+      <div class="card p-6 cursor-pointer" data-instructor="Marisa Pineda" data-id="marisa">
+        <div class="text-4xl mb-3">🧑‍🏫</div>
+        <h4 class="font-bold text-lg mb-1">Marisa Pineda</h4>
+        <p class="text-sm text-gray-400 mb-3">14 años de experiencia</p>
+        <div class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐ <span class="text-gray-500">(4,9)</span></div>
+      </div>
+      <div class="card p-6 cursor-pointer" data-instructor="Rafa Cabello" data-id="rafa">
+        <div class="text-4xl mb-3">🧔</div>
+        <h4 class="font-bold text-lg mb-1">Rafa Cabello</h4>
+        <p class="text-sm text-gray-400 mb-3">9 años de experiencia</p>
+        <div class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐ <span class="text-gray-500">(4,8)</span></div>
+      </div>
+      <div class="card p-6 cursor-pointer" data-instructor="Lucía Reyes" data-id="lucia">
+        <div class="text-4xl mb-3">👩‍🏫</div>
+        <h4 class="font-bold text-lg mb-1">Lucía Reyes</h4>
+        <p class="text-sm text-gray-400 mb-3">6 años de experiencia</p>
+        <div class="text-yellow-400 text-sm">⭐⭐⭐⭐ <span class="text-gray-500">(4,6)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 2: tipo de coche -->
+  <div class="mb-10">
+    <h3 class="font-semibold text-lg mb-4 flex items-center gap-2"><span class="accent-bg text-black w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">2</span> Tipo de coche</h3>
+    <div class="flex gap-4">
+      <button class="toggle-car" data-car="Manual">🚗 Manual</button>
+      <button class="toggle-car" data-car="Automático">⚙️ Automático</button>
+    </div>
+  </div>
+
+  <!-- Paso 3: franja horaria -->
+  <div class="mb-10">
+    <h3 class="font-semibold text-lg mb-4 flex items-center gap-2"><span class="accent-bg text-black w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span> Elige tu franja semanal</h3>
+    <div class="card p-6 overflow-x-auto">
+      <div class="grid gap-3 min-w-[640px]" style="grid-template-columns: 90px repeat(6, 1fr);">
+        <div></div>
+        <div class="text-center text-sm font-semibold text-gray-400">Lun</div>
+        <div class="text-center text-sm font-semibold text-gray-400">Mar</div>
+        <div class="text-center text-sm font-semibold text-gray-400">Mié</div>
+        <div class="text-center text-sm font-semibold text-gray-400">Jue</div>
+        <div class="text-center text-sm font-semibold text-gray-400">Vie</div>
+        <div class="text-center text-sm font-semibold text-gray-400">Sáb</div>
+
+        <div class="text-sm font-semibold text-gray-400 flex items-center">Mañana</div>
+        <div class="timeslot" data-day="Lunes" data-time="09:00 (mañana)">09:00</div>
+        <div class="timeslot full" data-day="Martes" data-time="09:00 (mañana)">09:00</div>
+        <div class="timeslot" data-day="Miércoles" data-time="09:00 (mañana)">09:00</div>
+        <div class="timeslot" data-day="Jueves" data-time="09:00 (mañana)">09:00</div>
+        <div class="timeslot full" data-day="Viernes" data-time="09:00 (mañana)">09:00</div>
+        <div class="timeslot" data-day="Sábado" data-time="09:00 (mañana)">09:00</div>
+
+        <div class="text-sm font-semibold text-gray-400 flex items-center">Mañana</div>
+        <div class="timeslot full" data-day="Lunes" data-time="11:00 (mañana)">11:00</div>
+        <div class="timeslot" data-day="Martes" data-time="11:00 (mañana)">11:00</div>
+        <div class="timeslot" data-day="Miércoles" data-time="11:00 (mañana)">11:00</div>
+        <div class="timeslot full" data-day="Jueves" data-time="11:00 (mañana)">11:00</div>
+        <div class="timeslot" data-day="Viernes" data-time="11:00 (mañana)">11:00</div>
+        <div class="timeslot full" data-day="Sábado" data-time="11:00 (mañana)">11:00</div>
+
+        <div class="text-sm font-semibold text-gray-400 flex items-center">Tarde</div>
+        <div class="timeslot" data-day="Lunes" data-time="17:00 (tarde)">17:00</div>
+        <div class="timeslot" data-day="Martes" data-time="17:00 (tarde)">17:00</div>
+        <div class="timeslot full" data-day="Miércoles" data-time="17:00 (tarde)">17:00</div>
+        <div class="timeslot" data-day="Jueves" data-time="17:00 (tarde)">17:00</div>
+        <div class="timeslot" data-day="Viernes" data-time="17:00 (tarde)">17:00</div>
+        <div class="timeslot full" data-day="Sábado" data-time="17:00 (tarde)">17:00</div>
+
+        <div class="text-sm font-semibold text-gray-400 flex items-center">Tarde</div>
+        <div class="timeslot full" data-day="Lunes" data-time="19:00 (tarde)">19:00</div>
+        <div class="timeslot" data-day="Martes" data-time="19:00 (tarde)">19:00</div>
+        <div class="timeslot" data-day="Miércoles" data-time="19:00 (tarde)">19:00</div>
+        <div class="timeslot" data-day="Jueves" data-time="19:00 (tarde)">19:00</div>
+        <div class="timeslot full" data-day="Viernes" data-time="19:00 (tarde)">19:00</div>
+        <div class="timeslot" data-day="Sábado" data-time="19:00 (tarde)">19:00</div>
+      </div>
+      <p class="text-xs text-gray-500 mt-4">Las franjas tachadas ya están ocupadas. Selecciona una libre para continuar.</p>
+    </div>
+  </div>
+
+  <!-- Resumen y confirmación -->
+  <div class="card p-6 md:p-8">
+    <div class="grid md:grid-cols-2 gap-8 items-center">
+      <div>
+        <h4 class="font-semibold mb-3 text-gray-300">Resumen de tu reserva</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li>👤 Instructor: <span id="resInstructor" class="text-white font-medium">sin elegir</span></li>
+          <li>🚘 Coche: <span id="resCar" class="text-white font-medium">sin elegir</span></li>
+          <li>🗓️ Franja: <span id="resSlot" class="text-white font-medium">sin elegir</span></li>
+        </ul>
+      </div>
+      <div class="text-right">
+        <button id="btnReservar" class="btn-primary w-full md:w-auto">Reservar clase</button>
+        <p id="confirmMsg" class="mt-4 text-sm"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROGRESO -->
+<section id="progreso" class="px-6 max-w-7xl mx-auto py-16">
+  <div class="mb-12 max-w-2xl">
+    <span class="text-xs font-bold tracking-widest text-blue-400 uppercase">Tu camino al carnet</span>
+    <h2 class="text-3xl md:text-5xl font-extrabold mt-2 mb-4">Tu progreso</h2>
+    <p class="text-gray-400 text-lg">Sigue de un vistazo cómo de cerca estás de presentarte al examen.</p>
+  </div>
+
+  <div class="card p-8">
+    <div class="space-y-8">
+      <div>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-medium">📘 Temario teórico completado</span>
+          <span class="text-gray-400" id="lblTeorico">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="barTeorico" data-target="78"></div></div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-medium">🛣️ Horas de prácticas acumuladas</span>
+          <span class="text-gray-400" id="lblPracticas">0 / 30 horas</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="barPracticas" data-target="80"></div></div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-medium">📝 Tests de simulacro superados</span>
+          <span class="text-gray-400" id="lblTests">0 / 20 tests</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="barTests" data-target="70"></div></div>
+      </div>
+    </div>
+    <div class="mt-8 glass rounded-2xl p-5 text-center">
+      <p id="motivacional" class="font-semibold text-lg"></p>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICIOS -->
+<section id="servicios" class="px-6 max-w-7xl mx-auto py-16">
+  <div class="mb-12 max-w-2xl">
+    <span class="text-xs font-bold tracking-widest text-blue-400 uppercase">Qué ofrecemos</span>
+    <h2 class="text-3xl md:text-5xl font-extrabold mt-2 mb-4">Todo lo que necesitas para sacarte el carnet</h2>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6">
+    <div class="card p-7">
+      <div class="text-4xl mb-4">📚</div>
+      <h3 class="font-bold text-lg mb-2">Clases teóricas online</h3>
+      <p class="text-gray-400 text-sm">Vídeos, tests y material descargable accesibles desde cualquier dispositivo, a tu ritmo.</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-4xl mb-4">🚙</div>
+      <h3 class="font-bold text-lg mb-2">Prácticas en circuito y ciudad</h3>
+      <p class="text-gray-400 text-sm">Coches manuales y automáticos, con recogida en distintos puntos de Córdoba capital.</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-4xl mb-4">📲</div>
+      <h3 class="font-bold text-lg mb-2">Gestión 100% desde el móvil</h3>
+      <p class="text-gray-400 text-sm">Reserva, cancela o cambia tus clases sin llamar ni pasarte por la oficina.</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-4xl mb-4">🎓</div>
+      <h3 class="font-bold text-lg mb-2">Preparación de examen</h3>
+      <p class="text-gray-400 text-sm">Simulacros oficiales y repasos exprés la semana antes de tu examen de tráfico.</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-4xl mb-4">📄</div>
+      <h3 class="font-bold text-lg mb-2">Trámites con la DGT</h3>
+      <p class="text-gray-400 text-sm">Nos encargamos del papeleo: solicitud, renovaciones y cambios de categoría.</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-4xl mb-4">⏱️</div>
+      <h3 class="font-bold text-lg mb-2">Clases intensivas</h3>
+      <p class="text-gray-400 text-sm">Paquetes acelerados para quienes necesitan el carnet en pocas semanas.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRUEBA SOCIAL -->
+<section id="opiniones" class="px-6 max-w-7xl mx-auto py-16">
+  <div class="mb-12 max-w-2xl">
+    <span class="text-xs font-bold tracking-widest text-blue-400 uppercase">Lo que dicen nuestros alumnos</span>
+    <h2 class="text-3xl md:text-5xl font-extrabold mt-2 mb-4">Cordobeses que ya conducen gracias a DriveSched</h2>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6 mb-12">
+    <div class="card p-7">
+      <div class="text-yellow-400 mb-3">⭐⭐⭐⭐⭐</div>
+      <p class="text-gray-300 mb-4">"Reservé mis clases prácticas un domingo por la noche desde el sofá. Aprobé a la primera y sin agobios."</p>
+      <p class="text-sm text-gray-500 font-medium">— Andrea M., barrio del Naranjo</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-yellow-400 mb-3">⭐⭐⭐⭐⭐</div>
+      <p class="text-gray-300 mb-4">"Lo del progreso me motivó muchísimo, ver las barras subir cada semana es lo que me empujó a no dejarlo."</p>
+      <p class="text-sm text-gray-500 font-medium">— Javier R., Ciudad Jardín</p>
+    </div>
+    <div class="card p-7">
+      <div class="text-yellow-400 mb-3">⭐⭐⭐⭐⭐</div>
+      <p class="text-gray-300 mb-4">"Cambié de horario de mi clase práctica en 10 segundos sin llamar a nadie. Así sí da gusto sacarse el carnet."</p>
+      <p class="text-sm text-gray-500 font-medium">— Carmen L., Levante</p>
+    </div>
+  </div>
+  <div class="grid sm:grid-cols-3 gap-6 text-center">
+    <div class="card p-8">
+      <p class="text-4xl font-extrabold accent mb-1">+1.200</p>
+      <p class="text-gray-400 text-sm">alumnos aprobados</p>
+    </div>
+    <div class="card p-8">
+      <p class="text-4xl font-extrabold accent mb-1">96%</p>
+      <p class="text-gray-400 text-sm">aprobados a la primera</p>
+    </div>
+    <div class="card p-8">
+      <p class="text-4xl font-extrabold accent mb-1">4,9★</p>
+      <p class="text-gray-400 text-sm">valoración media de alumnos</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="px-6 max-w-7xl mx-auto py-20">
+  <div class="card p-10 md:p-16 text-center glass">
+    <h2 class="text-3xl md:text-5xl font-extrabold mb-4">¿Listo para coger el volante?</h2>
+    <p class="text-gray-400 text-lg mb-8 max-w-xl mx-auto">Reserva hoy mismo tu primera clase práctica y empieza a contar tus horas hacia el carnet.</p>
+    <a href="#reserva" class="btn-primary text-lg">Reservar mi primera clase →</a>
+  </div>
+</section>
+
+<footer class="px-6 max-w-7xl mx-auto py-10 border-t border-[#1f1f1f] flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+  <div class="flex items-center gap-2">
+    <div class="w-7 h-7 rounded-lg accent-bg flex items-center justify-center text-black font-extrabold text-xs">DS</div>
+    <span>DriveSched · Autoescuela · Córdoba</span>
+  </div>
+  <p>© 2026 DriveSched. Demo de ejemplo creada por PuntoZero.</p>
+</footer>
+
+<script>
+// ----- Estado de la reserva -----
+const estado = { instructor: null, car: null, day: null, time: null };
+
+const resInstructor = document.getElementById('resInstructor');
+const resCar = document.getElementById('resCar');
+const resSlot = document.getElementById('resSlot');
+const confirmMsg = document.getElementById('confirmMsg');
+
+// Selección de instructor
+document.querySelectorAll('#instructores .card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('#instructores .card').forEach(c => c.classList.remove('sel'));
+    card.classList.add('sel');
+    estado.instructor = card.dataset.instructor;
+    resInstructor.textContent = estado.instructor;
+    confirmMsg.textContent = '';
+  });
+});
+
+// Selección de tipo de coche
+document.querySelectorAll('.toggle-car').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-car').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    estado.car = btn.dataset.car;
+    resCar.textContent = estado.car;
+    confirmMsg.textContent = '';
+  });
+});
+
+// Selección de franja horaria
+document.querySelectorAll('.timeslot').forEach(slot => {
+  if (slot.classList.contains('full')) return;
+  slot.addEventListener('click', () => {
+    document.querySelectorAll('.timeslot').forEach(s => s.classList.remove('sel'));
+    slot.classList.add('sel');
+    estado.day = slot.dataset.day;
+    estado.time = slot.dataset.time;
+    resSlot.textContent = `${estado.day}, ${estado.time}`;
+    confirmMsg.textContent = '';
+  });
+});
+
+// Botón reservar
+document.getElementById('btnReservar').addEventListener('click', () => {
+  if (!estado.instructor || !estado.car || !estado.day) {
+    confirmMsg.innerHTML = '⚠️ Elige instructor, tipo de coche y una franja horaria antes de reservar.';
+    confirmMsg.className = 'mt-4 text-sm text-amber-400 font-medium';
+    return;
+  }
+  confirmMsg.innerHTML = `✅ ¡Reserva confirmada! Clase con <strong>${estado.instructor}</strong>, coche <strong>${estado.car.toLowerCase()}</strong>, el <strong>${estado.day}</strong> a las <strong>${estado.time}</strong>.`;
+  confirmMsg.className = 'mt-4 text-sm text-green-400 font-medium';
+});
+
+// ----- Animación de barras de progreso -----
+function animarBarras() {
+  const barras = [
+    { id: 'barTeorico', lbl: 'lblTeorico', target: 78, texto: pct => `${pct}%` },
+    { id: 'barPracticas', lbl: 'lblPracticas', target: 80, texto: pct => `${Math.round(pct/100*30)} / 30 horas` },
+    { id: 'barTests', lbl: 'lblTests', target: 70, texto: pct => `${Math.round(pct/100*20)} / 20 tests` },
+  ];
+  barras.forEach(b => {
+    const el = document.getElementById(b.id);
+    const lbl = document.getElementById(b.lbl);
+    requestAnimationFrame(() => { el.style.width = b.target + '%'; });
+
+    let current = 0;
+    const step = () => {
+      current += 2;
+      if (current > b.target) current = b.target;
+      lbl.textContent = b.texto(current);
+      if (current < b.target) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+
+  const media = (78 + 80 + 70) / 3;
+  const msg = document.getElementById('motivacional');
+  if (media >= 85) {
+    msg.textContent = '🏁 ¡Estás a un paso del examen! Mantén el ritmo y reserva tu última tanda de prácticas.';
+  } else if (media >= 70) {
+    msg.textContent = '¡Estás muy cerca de poder examinarte! 🎯 Sigue así y en pocas semanas pides cita en la DGT.';
+  } else if (media >= 40) {
+    msg.textContent = '💪 Vas avanzando bien. Cada clase práctica te acerca más a tu carnet.';
+  } else {
+    msg.textContent = '🚦 Acabas de empezar: lo importante es ser constante, semana a semana.';
+  }
+}
+
+// Lanza la animación cuando la sección de progreso entra en pantalla
+const progresoSection = document.getElementById('progreso');
+let animado = false;
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !animado) {
+      animado = true;
+      animarBarras();
+    }
+  });
+}, { threshold: 0.3 });
+observer.observe(progresoSection);
+
+// Animación de aparición suave para las cards al hacer scroll
+const fadeEls = document.querySelectorAll('.card, header > div');
+fadeEls.forEach(el => el.classList.add('fade-up'));
+const fadeObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('show');
+  });
+}, { threshold: 0.1 });
+fadeEls.forEach(el => fadeObserver.observe(el));
+</script>
+</body>
+</html>
